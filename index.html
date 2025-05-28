@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>比亞迪全面深度分析互動應用 (藝術大師配色版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Zen Harmony - Inspired by natural, calming tones.
+        --color-background-light: #FDFBF6 (Very light, warm off-white)
+        --color-text-dark: #2A2B2C (Deep charcoal gray - darker for better contrast)
+        --color-text-muted: #5A5B5C (Darker muted gray - for better contrast)
+        --color-accent-primary: #4A7A76 (Muted Teal/Sage Green - Main accent, slightly darker/more saturated)
+        --color-accent-secondary: #B88B5D (Soft Ochre/Gold - Secondary accent, slightly darker/more saturated)
+        --color-accent-tertiary: #A2B29F (Light Sage - Subtle accents/borders)
+        --color-highlight-bg: #E0EAE9 (Slightly less pale sage for emphasized cards)
+        --color-error: #DC3545 (Red, for challenges)
+        --color-success: #28A745 (Green, for strategies)
+    -->
+    <style>
+        :root {
+            --color-background-light: #FDFBF6;
+            --color-text-dark: #2A2B2C;
+            --color-text-muted: #5A5B5C;
+            --color-accent-primary: #4A7A76;
+            --color-accent-secondary: #B88B5D;
+            --color-accent-tertiary: #A2B29F;
+            --color-highlight-bg: #E0EAE9;
+            --color-error: #DC3545;
+            --color-success: #28A745;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: var(--color-background-light);
+            color: var(--color-text-dark);
+        }
+        .nav-link { padding: 0.5rem 1rem; color: var(--color-background-light); border-radius: 0.25rem; transition: background-color 0.3s ease; }
+        .nav-link:hover { background-color: #3A6A66; } /* Darker primary on hover */
+        .nav-link.active { background-color: #3A6A66; font-weight: 600; } /* Active nav link */
+        .section-card { background-color: white; border-radius: 0.75rem; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .section-title { font-size: 2rem; font-weight: 700; color: var(--color-accent-primary); margin-bottom: 1.5rem; text-align: center; }
+        .kpi-card { background-color: var(--color-highlight-bg); border-radius: 0.5rem; padding: 1.5rem; text-align: center; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        .kpi-value { font-size: 2.5rem; font-weight: 800; color: var(--color-accent-primary); } /* Increased font size and weight */
+        .kpi-label { font-size: 0.95rem; font-weight: 600; color: var(--color-text-dark); margin-top: 0.25rem; } /* Increased font size and weight, darker color */
+        .kpi-desc { font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.1rem; } /* Slightly larger for description */
+        .chart-container { position: relative; width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; height: 350px; max-height: 450px; }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+        .tab-button { padding: 0.75rem 1.5rem; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; color: var(--color-text-muted); transition: color 0.3s ease, border-bottom-color 0.3s ease; }
+        .tab-button.active { color: var(--color-accent-primary); border-bottom-color: var(--color-accent-primary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .flow-diagram-item { background-color: var(--color-highlight-bg); color: var(--color-accent-primary); padding: 0.75rem 1.25rem; border-radius: 0.375rem; text-align: center; font-weight: 600; white-space: nowrap; transition: background-color 0.3s ease; }
+        .flow-diagram-item:hover { background-color: var(--color-accent-tertiary); }
+        .flow-diagram-arrow { font-size: 2rem; color: var(--color-text-muted); margin: 0 0.5rem; display: flex; align-items: center; }
+        .history-item { margin-bottom: 1rem; padding-left: 1rem; border-left: 3px solid var(--color-accent-primary); }
+        .history-year { font-weight: 700; color: var(--color-accent-primary); font-size: 1.25rem; margin-bottom: 0.5rem; }
+        .history-text { color: var(--color-text-muted); }
+        .highlight-card { background-color: var(--color-highlight-bg); border: 1px solid var(--color-accent-tertiary); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 1rem; } /* Light sage for highlights */
+        .insight-box {
+            background-color: var(--color-highlight-bg);
+            border: 1px solid var(--color-accent-tertiary);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--color-text-dark);
+            font-style: italic;
+        }
+        .animated-gradient-border {
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            border: 2px solid transparent; /* Placeholder for gradient border */
+            background-clip: padding-box;
+        }
+        .animated-gradient-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(60deg, var(--color-accent-primary), var(--color-accent-secondary), var(--color-accent-primary));
+            background-size: 200% 200%;
+            z-index: -1;
+            animation: gradient-animation 4s linear infinite;
+            border-radius: 0.75rem; /* Match section-card border-radius */
+        }
+        .animated-gradient-border > * {
+            position: relative;
+            z-index: 2; /* Ensure content is above the gradient */
+        }
+
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Specific styles for challenge/strategy cards */
+        .challenge-card { background-color: #FEE2E2; border: 1px solid #EF4444; } /* Red-ish for challenges */
+        .strategy-card { background-color: #D1FAE5; border: 1px solid #10B981; } /* Green-ish for strategies */
+    </style>
+</head>
+<body class="antialiased">
+
+    <nav class="sticky top-0 z-50 shadow-md" style="background-color: var(--color-accent-primary);">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <div class="text-2xl font-bold text-white">比亞迪深度分析</div>
+                <div class="hidden md:flex space-x-1">
+                    <a href="#overview" class="nav-link">概覽</a>
+                    <a href="#company-history" class="nav-link">公司歷史</a>
+                    <a href="#core-tech" class="nav-link">核心技術</a>
+                    <a href="#market-performance" class="nav-link">市場表現</a>
+                    <a href="#financials" class="nav-link">財務分析</a>
+                    <a href="#global-expansion" class="nav-link">全球擴張</a>
+                    <a href="#diversified-segments" class="nav-link">多元業務</a>
+                    <a href="#sustainability" class="nav-link">可持續發展</a>
+                    <a href="#challenges" class="nav-link">挑戰與展望</a>
+                    <a href="#vertical-integration" class="nav-link">垂直整合</a>
+                </div>
+                <button id="mobile-menu-button" class="md:hidden text-white text-3xl">☰</button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden" style="background-color: #4A7A76;">
+            <a href="#overview" class="block nav-link text-center py-2">概覽</a>
+            <a href="#company-history" class="block nav-link text-center py-2">公司歷史</a>
+            <a href="#core-tech" class="block nav-link text-center py-2">核心技術</a>
+            <a href="#market-performance" class="block nav-link text-center py-2">市場表現</a>
+            <a href="#financials" class="block nav-link text-center py-2">財務分析</a>
+            <a href="#global-expansion" class="block nav-link text-center py-2">全球擴張</a>
+            <a href="#diversified-segments" class="block nav-link text-center py-2">多元業務</a>
+            <a href="#sustainability" class="block nav-link text-center py-2">可持續發展</a>
+            <a href="#challenges" class="block nav-link text-center py-2">挑戰與展望</a>
+            <a href="#vertical-integration" class="block nav-link text-center py-2">垂直整合</a>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <section id="overview" class="section-card animated-gradient-border">
+            <h2 class="section-title">🚀 比亞迪概覽：從電池製造商到全球新能源領導者</h2>
+            <p class="text-lg text-center" style="color: var(--color-text-dark); margin-bottom: 2rem;">比亞迪（BYD）自1995年創立以來，已成功轉型為全球新能源汽車（NEV）及綜合性可再生能源解決方案的領導者。其核心競爭力源於獨特的垂直整合模式，涵蓋電池、電機、電控等關鍵技術的自主研發與生產，賦予其顯著的成本控制、創新速度及供應鏈韌性優勢。比亞迪秉持「成就夢想」（Build Your Dreams）的理念，持續為全球綠色轉型貢獻力量。</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="kpi-card">
+                    <div class="kpi-value">7,771億</div>
+                    <div class="kpi-label">2024年營收 (人民幣)</div>
+                    <p class="kpi-desc">同比增長29%</p>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">402.5億</div>
+                    <div class="kpi-label">2024年淨利潤 (人民幣)</div>
+                    <p class="kpi-desc">同比增長34%</p>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">427萬+</div>
+                    <div class="kpi-label">2024年全球汽車銷量</div>
+                    <p class="kpi-desc">同比增長41.3%，蟬聯銷冠</p>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">542億</div>
+                    <div class="kpi-label">2024年研發投入 (人民幣)</div>
+                    <p class="kpi-desc">超過當年淨利潤，同比增長36%</p>
+                </div>
+            </div>
+            <p class="text-md text-center" style="color: var(--color-text-dark);">比亞迪的卓越成就，如2024年蟬聯全球新能源汽車銷量冠軍、成為全球第四大汽車品牌，以及研發支出超越淨利潤，均彰顯其對長期技術進步和市場主導地位的戰略重視。</p>
+        </section>
+
+        <section id="company-history" class="section-card">
+            <h2 class="section-title">🕰️ 公司歷史：演進與里程碑</h2>
+            <p class="text-lg text-center" style="color: var(--color-text-muted);">比亞迪的發展歷程是一部不斷創新、垂直整合並積極應對市場變化的歷史，從電池製造商逐步成長為全球領先的綜合性科技集團。</p>
+            <div class="space-y-6">
+                <div class="history-item highlight-card">
+                    <div class="history-year">1995年</div>
+                    <div class="history-text">公司在深圳創立，最初專注於可充電電池製造，資本450萬元人民幣，20名員工。</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-year">1997年</div>
+                    <div class="history-text">成長為全球鎳鎘電池市場第四大供應商。</div>
+                </div>
+                <div class="history-item highlight-card">
+                    <div class="history-year">2000-2002年</div>
+                    <div class="history-text">成為摩托羅拉和諾基亞的首家中國鋰離子電池供應商。同年在香港聯交所主板上市。</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-year">2003年</div>
+                    <div class="history-text">戰略性收購西安秦川汽車，進入汽車產業，利用電池專業知識進行垂直整合。</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-year">2005年</div>
+                    <div class="history-text">推出首款自主品牌轎車比亞迪F3，創下中國國產品牌銷售紀錄。</div>
+                </div>
+                <div class="history-item highlight-card">
+                    <div class="history-year">2008年</div>
+                    <div class="history-text">推出中國首款商業化雙模混合動力車F3DM；獲沃倫·巴菲特旗下伯克希爾·哈撒韋公司重大投資，國際知名度大增。</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-year">2010年</div>
+                    <div class="history-text">在美國洛杉磯設立北美總部；與戴姆勒合資成立深圳比亞迪戴姆勒新技術有限公司。</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-year">2011年</div>
+                    <div class="history-text">在深圳證券交易所上市，實現雙重上市。</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-year">2013年</div>
+                    <div class="history-text">推出首款插電式混合動力轎車「秦」，開啟「王朝系列」產品線。</div>
+                </div>
+                <div class="history-item highlight-card">
+                    <div class="history-year">2015年</div>
+                    <div class="history-text">成為全球最大的可充電電池製造商。</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-year">2016年</div>
+                    <div class="history-text">高調進入城市軌道交通領域，推出全電動單軌系統「雲軌」，隨後推出「雲巴」。</div>
+                </div>
+                <div class="history-item highlight-card">
+                    <div class="history-year">2020年</div>
+                    <div class="history-text">發布劃時代的「刀片電池」，強調高安全性和長壽命。</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-year">2021年</div>
+                    <div class="history-text">推出第四代插混技術DM-i，正式啟動乘用車出海計劃。</div>
+                </div>
+                <div class="history-item highlight-card">
+                    <div class="history-year">2022年</div>
+                    <div class="history-text">3月起停止生產傳統燃油車，全面轉向純電和插混；11月第300萬輛新能源汽車下線；6月市值超越德國大眾汽車，成為全球第三大國際汽車製造商。</div>
+                </div>
+                <div class="history-item">
+                    <div class="history-year">2024年</div>
+                    <div class="history-text">1月成為全球首家達成1000萬輛新能源汽車下線里程碑的車企；4月歐洲銷量首超特斯拉。</div>
+                </div>
+            </div>
+            <p class="text-md text-center" style="color: var(--color-text-muted);">比亞迪的戰略演進，特別是其早期且持續地專注於「新能源」解決方案，反映出其對未來全球能源和交通模式的深刻預判。這種前瞻性的多元化發展，使其能夠構建一個強大且相互關聯的產品和服務生態系統。</p>
+        </section>
+
+        <section id="core-tech" class="section-card">
+            <h2 class="section-title">🛠️ 核心技術：創新驅動未來</h2>
+            <p class="text-lg text-center" style="color: var(--color-text-muted);">比亞迪的市場領導地位根植於其強大的自主研發能力和一系列顛覆性技術創新，這些技術在安全性、效率、性能和智能化方面樹立了行業新標杆。</p>
+            <div class="mb-6 border-b border-gray-300 flex justify-center flex-wrap">
+                <button class="tab-button active" data-tab="blade-battery">刀片電池</button>
+                <button class="tab-button" data-tab="e-platform">e平台</button>
+                <button class="tab-button" data-tab="dm-i">DM-i 超級混動</button>
+                <button class="tab-button" data-tab="intelligence">智能化與自動駕駛</button>
+                <button class="tab-button" data-tab="patents-rd">專利佈局與研發</button>
+            </div>
+
+            <div id="blade-battery-content" class="tab-content active highlight-card">
+                <h3 class="text-xl font-semibold mb-3" style="color: var(--color-accent-primary);">🔋 刀片電池 (Blade Battery)</h3>
+                <p style="color: var(--color-text-muted);" class="mb-2">比亞迪刀片電池是一種磷酸鐵鋰（LFP）電池，以其獨特的扁平矩形單體設計和卓越的安全性著稱。其主要特點包括：</p>
+                <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-1">
+                    <li><strong>超高安全性：</strong> 通過嚴苛的針刺實驗，不起火、不冒煙，表面溫度僅30-60℃，大大降低自燃風險。還通過擠壓、彎曲、300℃加熱及260%過充測試，均未導致起火爆炸。</li>
+                    <li><strong>空間利用率提升：</strong> 獨特結構使電池包空間利用率提高50%以上，提升能量密度。</li>
+                    <li><strong>長壽命：</strong> 支持超過3500-5000次充放電循環，遠高於三元鋰電池的約2500次。</li>
+                    <li><strong>成本效益：</strong> LFP材料結合優化設計，實現高性價比。</li>
+                    <li><strong>結構強度：</strong> 電池單體兼作結構樑，提升車身剛性。</li>
+                </ul>
+                <p style="color: var(--color-text-muted);" class="mt-2"><strong>第二代刀片電池：</strong> 預計2025年推出，能量密度將進一步提升至210 Wh/kg（從目前的150 Wh/kg），支持8C超快速充電，約7.5分鐘即可充滿電，並具備更長壽命。這將使LFP電池在與鎳基化學電池的競爭中更具優勢。</p>
+            </div>
+
+            <div id="e-platform-content" class="tab-content highlight-card">
+                <h3 class="text-xl font-semibold mb-3" style="color: var(--color-accent-primary);">⚡ e平台 (e-Platform)</h3>
+                <p style="color: var(--color-text-muted);" class="mb-2">比亞迪e平台是專為純電動汽車打造的技術平台，集效率、安全、智能和美學於一體。</p>
+                <h4 class="text-lg font-semibold my-2" style="color: var(--color-accent-secondary);">超級e平台：</h4>
+                <p style="color: var(--color-text-muted);" class="mb-2">被譽為「全球最強專業純電平台」，旨在徹底解決用戶的「充電焦慮」，實現「油電同速」。</p>
+                <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-1">
+                    <li><strong>全域千伏高壓架構：</strong> 全球首個量產乘用車「全域千伏高壓架構」，所有核心部件提升至1000V電壓平台。</li>
+                    <li><strong>兆瓦閃充：</strong> 充電功率達1兆瓦（1000kW），充電速度達到「1秒2公里」的峰值，搭載閃充電池的漢L可在5分鐘內補充400公里續航。</li>
+                    <li><strong>3萬轉電機：</strong> 全球首款量產，大幅提升車速，顯著降低重量和體積，提高功率密度。</li>
+                    <li><strong>碳化矽功率芯片：：</strong> 自研並量產全新一代車規級SiC功率芯片，電壓高達1500V，行業首次量產應用的最高電壓等級。</li>
+                    <li><strong>充電基礎設施：</strong> 自研全球首款全液冷兆瓦閃充終端系統（最大1360kW），規劃全國建設4000多座「兆瓦閃充站」。獨創「雙槍充電」和「智能升壓」技術。</li>
+                </ul>
+                 <h4 class="text-lg font-semibold my-2" style="color: var(--color-accent-secondary);">e平台 3.0：</h4>
+                <p style="color: var(--color-text-muted);" class="mb-2">專為純電動汽車打造的獨家技術平台，具備高度兼容性和模塊化設計。</p>
+                <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-1">
+                    <li><strong>刀片電池與車身一體化 (CTB)：</strong> 融合刀片電池和車身結構，提升整車安全性和駕駛體驗。</li>
+                    <li><strong>八合一高效電動動力總成：：</strong> 集成八大核心部件，整體效率達89%，續航超1000公里。</li>
+                    <li><strong>快速充電：：</strong> 充電5分鐘，續航150公里。</li>
+                    <li><strong>寬溫域高效熱泵系統：</strong> 在-30℃至60℃工作，利用餘熱，冬季續航提升高達20%。</li>
+                    <li><strong>全新電動四驅：：</strong> 0-100km/h加速2.9秒，同時能耗與兩驅車型相當。</li>
+                    <li><strong>模塊化計算機硬件與比亞迪OS：</strong> 提升智能駕駛體驗，迭代週期縮短70%。</li>
+                </ul>
+            </div>
+
+            <div id="dm-i-content" class="tab-content highlight-card">
+                <h3 class="text-xl font-semibold mb-3" style="color: var(--color-accent-primary);">⛽ DM-i 超級混動系統</h3>
+                <p style="color: var(--color-text-muted);" class="mb-2">DM-i（Dual Mode intelligent）超級混動技術旨在結合燃油車和純電車優勢，實現高效能、低油耗、低排放。其核心優勢：</p>
+                <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-1">
+                    <li><strong>以電為主：</strong> 電機驅動佔比高 (NEDC 88%, WLTC 82%)，多用電、少用油。</li>
+                    <li><strong>極致燃油經濟性：</strong> 秦PLUS DM-i虧電油耗僅3.8L/100km，為用戶節省大量燃油成本。</li>
+                    <li><strong>平順駕駛體驗：</strong> 市區主要電驅，加速迅猛；高速智能切換，動力充沛，確保行駛順暢安全。</li>
+                    <li><strong>靜謐舒適：</strong> 電動模式下噪音振動極低。</li>
+                    <li><strong>核心組件：</strong> 高集成EHS電混系統（高速雙電機、雙控制器、油冷技術）、驍雲混動專用發動機（世界領先熱效率、精簡結構）、定制刀片電池（電量從18.3 kWh起，70公里以上純電續航）。</li>
+                    <li><strong>可擴展性與適應性：</strong> 系統設計高度適應性，可針對不同類型車輛進行擴展，從緊湊型轎車到SUV、商用卡車。</li>
+                </ul>
+                <p style="color: var(--color-text-muted);" class="mt-2"><strong>市場影響：</strong> DM-i超級混動被定位為對傳統燃油車市場的「供給側改革」，有效彌合了燃油車和純電動車之間的差距，加速了市場向新能源的轉型。</p>
+            </div>
+            <div id="intelligence-content" class="tab-content highlight-card">
+                <h3 class="text-xl font-semibold mb-3" style="color: var(--color-accent-primary);">🧠 智能化與自動駕駛戰略</h3>
+                <p style="color: var(--color-text-muted);" class="mb-2">比亞迪將「整車智能」作為核心戰略，旨在重新定義智能汽車，強調車輛的全面感知、集中思考、精準控制和協同執行。</p>
+                <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-1">
+                    <li><strong>「整車智能」戰略：</strong> 超越傳統智能座艙和智能駕駛，實現車輛像高級智慧生命體一樣運行。</li>
+                    <li><strong>璇璣架構：</strong> 行業首個智電融合的智能化架構，賦予汽車智能化的「大腦」和「神經網絡」。</li>
+                    <li><strong>璇璣AI大模型：</strong> 首創雙循環多模態AI，首次將人工智能應用到車輛全領域，覆蓋300+場景，持續進化。</li>
+                    <li><strong>自動駕駛進展：</strong>
+                        <ul class="list-disc list-inside ml-4" style="color: var(--color-text-muted); space-y-1">
+                            <li>超過4000名工程師專注智能駕駛，L2級智能駕駛搭載量位居中國第一。</li>
+                            <li>「天神之眼」（God's Eye）高階智能駕駛輔助系統已實現量產交付。</li>
+                            <li>全國首個獲得L3級測試牌照的汽車企業。</li>
+                            <li>提供全場景導航輔助駕駛功能和近距離代客泊車功能。</li>
+                            <li>DiPilot系統將普及至海鷗等平價車型（最低69,800人民幣），提供遠程泊車和高速公路自動導航等功能。</li>
+                            <li>DiPilot提供三種配置：DiPilot 600（三顆激光雷達，高端仰望）、DiPilot 300（單顆激光雷達，騰勢/高端比亞迪）、DiPilot 100（攝像頭/雷達，平價車型）。</li>
+                        </ul>
+                    </li>
+                    <li><strong>戰略合作與研發投入：</strong> 與華為在智能駕駛解決方案上展開合作（如方程豹汽車豹8將搭載華為乾崑智駕ADS3.0方案）。計劃未來投資1000億人民幣佈局前沿智能駕駛技術。</li>
+                </ul>
+                <p style="color: var(--color-text-muted);" class="mt-2">比亞迪的智能化戰略旨在將先進技術大眾化，透過規模化和垂直整合降低成本，樹立行業新標杆，加速智能汽車普及。</p>
+            </div>
+            <div id="patents-rd-content" class="tab-content highlight-card">
+                <h3 class="text-xl font-semibold mb-3" style="color: var(--color-accent-primary);">📜 專利佈局與研發投入</h3>
+                <p style="color: var(--color-text-muted);" class="mb-2">比亞迪對技術創新的承諾體現在其龐大的專利佈局和持續的研發投入上。</p>
+                <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-1">
+                    <li><strong>專利數量：</strong> 從2003年到2022年，比亞迪共申請超過13,000項專利，是特斯拉同期（836項）的15倍以上。</li>
+                    <li><strong>專利側重：：</strong> 超過一半的專利與電池相關，充分反映其在電池技術領域的深厚積累和垂直整合戰略。</li>
+                    <li><strong>研發人員規模：：</strong> 擁有超過90,000名工程師，是全球研發人員最多的汽車企業。</li>
+                    <li><strong>研發投資：</strong> 2024年研發支出達到542億元人民幣，同比增長36%，顯著超過當年淨利潤。在過去14年（2011-2024年）中，有13次研發支出超過年度淨利潤。累計研發投資已超過1,800億元人民幣。</li>
+                    <li><strong>未來規劃：</strong> 計劃未來投資1000億人民幣，重點佈局前沿智能駕駛技術。</li>
+                </ul>
+                <p style="color: var(--color-text-muted);" class="mt-2">比亞迪龐大的專利組合和持續的研發投入，為其提供了強大的法律和技術壁壘，使其能夠提供技術更優越、差異化更明顯的產品，有效應對產能過剩和價格戰帶來的挑戰。</p>
+            </div>
+        </section>
+
+        <section id="market-performance" class="section-card">
+            <h2 class="section-title">📈 市場表現：全球領先地位</h2>
+            <p class="text-lg text-center" style="color: var(--color-text-muted);">比亞迪在全球新能源汽車市場持續擴大領先優勢，產品銷往70多個國家和地區。其強勁的銷量增長、多元化的產品組合以及在關鍵市場的積極佈局，彰顯了其全球影響力。</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <div class="bg-gray-50 p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-semibold mb-3 text-center" style="color: var(--color-accent-primary);">新能源汽車銷量趨勢 (2019-2024年)</h3>
+                    <p class="text-sm" style="color: var(--color-text-muted);" class="mb-4 text-center">比亞迪新能源汽車銷量實現跨越式增長，反映市場對其產品的高度認可。</p>
+                    <div class="chart-container h-80">
+                        <canvas id="nevSalesTrendChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-semibold mb-3 text-center" style="color: var(--color-accent-primary);">2024年銷量構成 (純電 vs. 插混)</h3>
+                    <p class="text-sm" style="color: var(--color-text-muted);" class="mb-4 text-center">插電混動(PHEV)與純電動(BEV)車型共同構建強勁銷售表現。</p>
+                    <div class="chart-container h-80">
+                        <canvas id="salesCompositionChart"></canvas>
+                    </div>
+                </div>
+                <div class="md:col-span-2 bg-gray-50 p-6 rounded-lg shadow">
+                     <h3 class="text-xl font-semibold mb-3 text-center" style="color: var(--color-accent-primary);">全球電動汽車電池市場份額 (2024年)</h3>
+                     <p class="text-sm" style="color: var(--color-text-muted);" class="mb-4 text-center">憑藉刀片電池等核心技術，比亞迪旗下弗迪電池已成為全球第二大電動汽車電池供應商。</p>
+                    <div class="chart-container h-80">
+                        <canvas id="batteryMarketShareChart"></canvas>
+                    </div>
+                </div>
+                <div class="md:col-span-2 bg-gray-50 p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-semibold mb-3 text-center" style="color: var(--color-accent-primary);">2024年熱銷乘用車型概覽</h3>
+                    <p class="text-sm" style="color: var(--color-text-muted);" class="mb-4 text-center">王朝系列和海洋系列的多款車型持續熱銷，深受市場歡迎。比亞迪秦PLUS DM-i榮耀版和海鷗等車型的激進定價，使其在市場上具備強大的價格競爭力。</p>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200 rounded-md">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="py-2 px-4 border-b text-left text-sm font-semibold" style="color: var(--color-text-dark);">系列</th>
+                                    <th class="py-2 px-4 border-b text-left text-sm font-semibold" style="color: var(--color-text-dark);">車型名稱</th>
+                                    <th class="py-2 px-4 border-b text-left text-sm font-semibold" style="color: var(--color-text-dark);">車型類別</th>
+                                    <th class="py-2 px-4 border-b text-left text-sm font-semibold" style="color: var(--color-text-dark);">動力總成</th>
+                                    <th class="py-2 px-4 border-b text-left text-sm font-semibold" style="color: var(--color-text-dark);">價格區間(人民幣)</th>
+                                    <th class="py-2 px-4 border-b text-left text-sm font-semibold" style="color: var(--color-text-dark);">2024年銷量(約)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">王朝</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">漢L EV</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">轎車</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">純電動(BEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">219,800 - 279,800</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">約25萬輛 (漢系列合計)</td></tr>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">王朝</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">漢L DM</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">轎車</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">插電混動(PHEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">209,800-259,800</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">約25萬輛 (漢系列合計)</td></tr>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">王朝</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">秦L EV</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">轎車</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">純電動(BEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">119,800 - 139,800</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">約65萬輛 (秦系列合計)</td></tr>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">王朝</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">秦L DM-i智駕版</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">轎車</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">插電混動(PHEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">99,800 - 139,800</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">約65萬輛 (秦系列合計)</td></tr>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">王朝</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">秦PLUS DM-i榮耀版</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">轎車</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">插電混動(PHEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">79,800-125,800</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">約65萬輛 (秦系列合計)</td></tr>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">王朝</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">宋L EV智駕版</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">SUV</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">純電動(BEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">189,800 - 249,800</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">約80萬輛 (宋系列合計)</td></tr>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">王朝</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">宋Pro DM-i智駕版</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">SUV</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">插電混動(PHEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">102,800 - 132,800</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">約80萬輛 (宋系列合計)</td></tr>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">王朝</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">元UP智駕版</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">SUV</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">純電動(BEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">99,800-119,800</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">約20萬輛 (元系列合計)</td></tr>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">海洋</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">海豹07DM-i智駕版</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">轎車</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">插電混動(PHEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">139,800-195,800</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">未單獨列出</td></tr>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">海洋</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">海豚智駕版</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">掀背車</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">純電動(BEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">99,800-125,800</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">約40萬輛</td></tr>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">海洋</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">海鷗智駕版</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">掀背車</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">純電動(BEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">69,800-85,000</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">約35萬輛</td></tr>
+                                <tr><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">海洋</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">海獅O7EV智駕版</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">SUV</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">純電動(BEV)</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">189,800 - 239,800</td><td class="py-2 px-4 border-b" style="color: var(--color-text-muted);">未單獨列出</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-sm" style="color: var(--color-text-muted);" class="mt-4 text-center">比亞迪通過仰望、方程豹等品牌進軍高端和專業化市場，合資品牌騰勢D9也在高端MPV市場取得銷量冠軍。這種廣泛的產品矩陣旨在覆蓋幾乎所有消費群體。</p>
+                </div>
+
+                <div class="md:col-span-2 bg-gray-50 p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-semibold mb-3 text-center" style="color: var(--color-accent-primary);">商用車業務概覽</h3>
+                    <p class="text-sm" style="color: var(--color-text-muted);" class="mb-4 text-center">比亞迪在商用車領域的佈局同樣廣泛，涵蓋了電動巴士、電動卡車和多種專用車輛，是其早期拓展國際市場的重要途徑。</p>
+                    <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-2">
+                        <li><strong>電動巴士：</strong> K9系列是代表產品，採用全鋁合金車身，搭載自主研發磷酸鐵鋰電池。城市路況一次充電續航250公里，4小時充滿。已在全球六大洲、50多個國家、300多個城市投入運營。</li>
+                        <li><strong>電動卡車：</strong> 提供多種解決方案，如純電動半掛牽引車Q3（零排放、刀片電池、續航350公里、45分鐘快充20%-80%），以及輕型卡車T5和T7（最高時速100公里/小時，配備ABS、ESC、AEB、ACC等高安全性配置）。</li>
+                        <li><strong>專用車輛：</strong> 例如K10B純電動機場擺渡車，專為機場接駁打造，強調安全可靠、舒適便捷和經濟節能。</li>
+                    </ul>
+                    <p class="text-sm" style="color: var(--color-text-muted);" class="mt-4 text-center">比亞迪早在2010年就提出「城市公共交通電動化」戰略，透過電動巴士的早期出口，逐步建立國際關係、了解當地市場需求，並在海外建立初步的品牌認知度和服務網絡。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="financials" class="section-card">
+            <h2 class="section-title">💰 財務分析：穩健增長與投資未來</h2>
+            <p class="text-lg text-center" style="color: var(--color-text-muted);" class="mb-8">比亞迪在強勁的市場表現背後，展現出穩健的財務狀況和持續的增長趨勢。公司將巨額資金投入研發，致力於引領未來技術趨勢。</p>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-8 items-center">
+                <div class="md:col-span-3 bg-gray-50 p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-semibold mb-3 text-center" style="color: var(--color-accent-primary);">營收與淨利潤 (2023-2024年)</h3>
+                    <p class="text-sm" style="color: var(--color-text-muted);" class="mb-4 text-center">比亞迪的營業收入和淨利潤均實現高速增長，彰顯強勁的盈利能力。這得益於其強勁的銷量和垂直整合帶來的成本優勢。</p>
+                    <div class="chart-container h-96">
+                        <canvas id="financialGrowthChart"></canvas>
+                    </div>
+                </div>
+                <div class="md:col-span-2 space-y-6">
+                    <div class="kpi-card highlight-card">
+                        <div class="kpi-value">542億</div>
+                        <div class="kpi-label">2024年研發投入 (人民幣)</div>
+                        <p class="kpi-desc">同比增長36%，超過當年淨利潤</p>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value">1549億</div>
+                        <div class="kpi-label">2024年末現金儲備 (人民幣)</div>
+                        <p class="kpi-desc">充裕現金流為業務發展提供有力支持</p>
+                    </div>
+                     <div class="kpi-card">
+                        <div class="kpi-value">285.8億</div>
+                        <div class="kpi-label">2024年末有息債務 (人民幣)</div>
+                        <p class="kpi-desc">僅佔總負債4.9%，行業最低水平之一</p>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value">1335億</div>
+                        <div class="kpi-label">2024年淨經營現金流 (人民幣)</div>
+                        <p class="kpi-desc">強勁的現金產生能力</p>
+                    </div>
+                </div>
+            </div>
+            <p class="text-md text-center" style="color: var(--color-text-muted);" class="mt-8">比亞迪在過去14年（2011-2024年）中，有13次研發支出超過了其年度淨利潤，累計研發投資已超過1,800億元人民幣。這種財務實力對於比亞迪資助其雄心勃勃的研發計劃和全球擴張戰略至關重要。</p>
+            <div class="mt-8 bg-gray-50 p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold mb-3 text-center" style="color: var(--color-accent-primary);">市場估值與分析師評級 (截至2025年5月21日)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                    <div>
+                        <div class="kpi-value text-2xl">$1,796.1億</div>
+                        <div class="kpi-label">市值 (美元)</div>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-2xl">$59.10</div>
+                        <div class="kpi-label">股價 (美元)</div>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-2xl">114.3%</div>
+                        <div class="kpi-label">過去一年總回報率</div>
+                    </div>
+                </div>
+                <p class="text-sm" style="color: var(--color-text-muted);" class="mt-4 text-center">分析師普遍看好比亞迪，共計13位分析師給予「強烈買入」評級，平均目標價為$67.44，存在13.34%的潛在漲幅。</p>
+            </div>
+            <div class="flex justify-center mt-6">
+                <button id="generateInsightBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105" style="background-color: var(--color-accent-secondary);">
+                    生成財務洞察 ✨
+                </button>
+            </div>
+            <div id="financialInsightOutput" class="insight-box">
+                點擊上方按鈕獲取比亞迪2024年財務表現的市場洞察。
+            </div>
+        </section>
+
+        <section id="global-expansion" class="section-card">
+            <h2 class="section-title">🌍 全球擴張：邁向世界</h2>
+            <p class="text-lg text-center" style="color: var(--color-text-muted);" class="mb-8">比亞迪的全球擴張是其應對國內產能過剩和尋求新增長點的關鍵戰略。出口是其在海外生產基地全面投產前實現銷量增長的重要支柱。</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-gray-50 p-6 rounded-lg shadow highlight-card">
+                    <h3 class="text-xl font-semibold mb-3" style="color: var(--color-accent-primary);">主要國際市場與區域焦點</h3>
+                    <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-2">
+                        <li><strong>全球足跡：</strong> 業務遍及50多個國家，在六大洲的70多個國家銷售車輛。</li>
+                        <li><strong>歐洲市場：</strong> 戰略重點，匈牙利設廠。2024年售出約15萬輛（Atto 3和Seal），目標2026年德國銷量12萬輛，爭取市場前五。2025年4月歐洲電動車銷量首次超越特斯拉（7,231輛對特斯拉的7,165輛），同比增長169%。</li>
+                        <li><strong>東南亞市場：</strong> 潛力巨大，銷量強勁增長。印尼在2024年初超越泰國成為比亞迪在東南亞最大市場。2023年東南亞銷量7萬輛，市佔35%，居第一。</li>
+                        <li><strong>拉丁美洲市場：</strong> 巴西是最大海外出口市場，2024年車輛註冊量同比增長328%，已推出七款車型，躋身巴西市場前十大品牌。2024年中國品牌佔拉丁美洲電動車總銷量的51%。</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg shadow highlight-card">
+                    <h3 class="text-xl font-semibold mb-3" style="color: var(--color-accent-primary);">海外生產基地與本地化努力</h3>
+                    <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-2">
+                        <li><strong>已規劃/運營工廠：</strong> 泰國（2024年運營，年產能約15萬輛）、烏茲別克斯坦（2024年1月首車下線）、巴西（2024年下半年投產，初期年產能約15萬輛，總投資30億雷亞爾）、匈牙利（預計2025年底/2026年）、印尼（預計2025年底/2026年）、土耳其（2024年7月宣布新建工廠）。</li>
+                        <li><strong>本地化效益：</strong> 降低成本，有效規避關稅壁壘，擴大市場份額。積極的海外製造擴張表明比亞迪致力於成為一個真正的全球汽車製造商，減少「碳足跡」擔憂，並與當地經濟建立更緊密關係。</li>
+                    </ul>
+                    <h3 class="text-xl font-semibold mt-6 mb-3" style="color: var(--color-accent-primary);">銷售網絡與市場進入方式</h3>
+                    <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-2">
+                        <li><strong>經銷商模式：</strong> 主要採用經銷商模式，與海外本地經銷商合作，建立本地化銷售和服務體系。</li>
+                        <li><strong>分階段進入：</strong> 海外佈局始於1998年荷蘭的電池業務分公司，2010年佈局商用車（電動大巴），2021年正式啟動乘用車出海計劃。電動大巴的早期出口與歐洲的環保理念不謀而合，使其在歐洲市場獲得了早期立足點。</li>
+                    </ul>
+                </div>
+            </div>
+            <p class="text-md text-center" style="color: var(--color-text-muted);" class="mt-8">比亞迪迅速建立多個海外生產設施的舉動，是對日益加劇的地緣政治緊張局勢和貿易保護主義的直接回應。本地化製造已成為戰略必要。</p>
+        </section>
+        
+        <section id="diversified-segments" class="section-card">
+            <h2 class="section-title">🧩 多元業務：超越汽車的生態系統</h2>
+            <p class="text-lg text-center" style="color: var(--color-text-muted);" class="mb-8">比亞迪的業務版圖遠不止於新能源汽車，已成功拓展至電子、軌道交通和儲能等多個高新技術領域，構建了多元化且協同發展的產業生態系統。</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="p-6 border rounded-lg text-center highlight-card" style="border-color: var(--color-accent-primary);">
+                    <div class="text-4xl mb-2" style="color: var(--color-accent-primary);">📱</div>
+                    <h3 class="text-xl font-semibold mb-1" style="color: var(--color-accent-primary);">電子業務</h3>
+                    <p style="color: var(--color-text-muted);" class="text-sm">比亞迪電子（國際）有限公司於2007年上市，是全球領先的智能產品解決方案供應商。業務涵蓋智能手機部件、汽車智能系統等。華為大部分手機由比亞迪製造。2024年貢獻總營收約20.54%。</p>
+                </div>
+                <div class="p-6 border rounded-lg text-center highlight-card" style="border-color: var(--color-accent-primary);">
+                     <div class="text-4xl mb-2" style="color: var(--color-accent-primary);">🔋</div>
+                    <h3 class="text-xl font-semibold mb-1" style="color: var(--color-accent-primary);">電池與儲能</h3>
+                    <p style="color: var(--color-text-muted);" class="text-sm">作為比亞迪發家之本，電池業務是核心競爭力基石。自主研發磷酸鐵鋰「刀片電池」。在消費電池和儲能系統領域亦表現出色，儲能系統部署超75GWh。</p>
+                </div>
+                <div class="p-6 border rounded-lg text-center highlight-card" style="border-color: var(--color-accent-primary);">
+                     <div class="text-4xl mb-2" style="color: var(--color-accent-primary);">🚈</div>
+                    <h3 class="text-xl font-semibold mb-1" style="color: var(--color-accent-primary);">軌道交通</h3>
+                    <p style="color: var(--color-text-muted);" class="text-sm">提供「雲軌」和「雲巴」等中低運量城市軌道交通解決方案，旨在解決城市交通擁堵。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="sustainability" class="section-card">
+            <h2 class="section-title">🌱 可持續發展：DREAMS倡議與綠色承諾</h2>
+            <p class="text-lg text-center" style="color: var(--color-text-muted);" class="mb-8">比亞迪將ESG提升至董事會層面的戰略優先事項，以「DREAMS」倡議為指引，致力於脫碳、變革、平等、聯盟、道德誠信和共享價值，積極履行企業社會責任。</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="kpi-card highlight-card">
+                    <div class="kpi-value text-2xl" style="color: var(--color-accent-primary);">2045年碳中和</div>
+                    <div class="kpi-label">全價值鏈碳中和目標</div>
+                    <p class="kpi-desc">2030年運營碳排放強度降低50% (以2023年為基準)</p>
+                </div>
+                <div class="kpi-card highlight-card">
+                    <div class="kpi-value text-2xl" style="color: var(--color-accent-primary);">5.04億棵樹</div>
+                    <div class="kpi-label">2024年新能源車減排貢獻 (相當於)</div>
+                    <p class="kpi-desc">累計純電動行駛里程1,500億公里</p>
+                </div>
+                <div class="kpi-card highlight-card">
+                    <div class="kpi-value text-2xl" style="color: var(--color-accent-primary);">57.9%綠電</div>
+                    <div class="kpi-label">2024年綠色電力使用佔比</div>
+                    <p class="kpi-desc">採購223萬張綠色證書，使用4.68億千瓦時綠電</p>
+                </div>
+                <div class="kpi-card highlight-card">
+                    <div class="kpi-value text-2xl" style="color: var(--color-accent-primary);">96.9萬員工</div>
+                    <div class="kpi-label">截至2024年底僱員數</div>
+                    <p class="kpi-desc">透過內部培訓培養57,800名熟練專業人才</p>
+                </div>
+                <div class="kpi-card highlight-card">
+                    <div class="kpi-value text-2xl" style="color: var(--color-accent-primary);">1萬噸+</div>
+                    <div class="kpi-label">廢舊動力電池回收量</div>
+                    <p class="kpi-desc">在兩家工廠回收處理</p>
+                </div>
+                <div class="kpi-card highlight-card">
+                    <div class="kpi-value text-2xl" style="color: var(--color-accent-primary);">14.1億</div>
+                    <div class="kpi-label">廢物處理投資 (人民幣)</div>
+                    <p class="kpi-desc">實現污染物排放100%合規</p>
+                </div>
+            </div>
+            <p class="text-md text-center" style="color: var(--color-text-muted);" class="mt-8">比亞迪將10%的高管薪酬與ESG績效指標掛鉤，建立了領先的可持續發展治理框架。公司還透過30億元人民幣的教育慈善基金支持高校獎學金，並向員工持股計劃撥款18億元人民幣，惠及近1.2萬名員工。</p>
+        </section>
+
+        <section id="challenges" class="section-card">
+            <h2 class="section-title">🚧 挑戰與展望：應對變局，智向未來</h2>
+            <p class="text-lg text-center" style="color: var(--color-text-muted);" class="mb-8">儘管成就斐然，比亞迪仍面臨行業產能過剩、激烈價格戰及日益增長的國際貿易壁壘等多重挑戰。公司正透過全球化、本地化生產和持續技術創新積極應對。</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="p-6 rounded-lg shadow challenge-card">
+                    <h3 class="text-xl font-semibold mb-3" style="color: var(--color-error);">主要挑戰</h3>
+                    <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-1">
+                        <li><strong>中國市場產能過剩：</strong> 未售出電動車數量高達350萬輛，相當於近兩個月銷量，創兩年半新高，導致資源浪費和利潤受損。</li>
+                        <li><strong>全球市場價格競爭激烈：</strong> 比亞迪率先發起10-34%的大幅降價，引發行業價格戰，嚴重侵蝕企業盈利能力。</li>
+                        <li><strong>國內需求疲軟：</strong> 消費者信心脆弱，購車慾望受抑制，政府刺激措施效果有限。</li>
+                        <li><strong>國際貿易壁壘與地緣政治風險：</strong> 美國對中國電動車徵收高達100%關稅，幾乎完全封鎖市場。歐盟可能實施保護措施，對比亞迪匈牙利工廠的審查也可能限制其增長。</li>
+                        <li><strong>供應鏈穩定性：</strong> 地緣政治緊張局勢可能影響全球供應鏈的穩定性。</li>
+                    </ul>
+                </div>
+                <div class="p-6 rounded-lg shadow strategy-card">
+                    <h3 class="text-xl font-semibold mb-3" style="color: var(--color-success);">核心應對策略與展望</h3>
+                    <ul class="list-disc list-inside" style="color: var(--color-text-muted); space-y-1">
+                        <li><strong>海外擴張與本地化生產：</strong> 加速在歐洲、東南亞、拉丁美洲等關鍵市場建立生產基地，規避關稅，尋求更高海外利潤。</li>
+                        <li><strong>持續技術創新：</strong> 深化「刀片電池」、「e平台」、「DM-i」技術優勢，並大力推動智能化和自動駕駛技術發展。</li>
+                        <li><strong>聚焦「整車智能」：</strong> 投入千億人民幣研發智能駕駛，提升產品附加值，加速智能汽車普及。</li>
+                        <li><strong>垂直整合：</strong> 繼續利用在關鍵零組件（如電池）上的自給自足能力，維持成本優勢和供應鏈控制。</li>
+                        <li><strong>品牌多元化：</strong> 發展仰望、方程豹等高端品牌，提升品牌形象和產品附加值。</li>
+                        <li><strong>新能源汽車文化：</strong> 計劃投入50億人民幣建設全球首批全地形專業賽車場，構建新能源時代的汽車文化。</li>
+                    </ul>
+                </div>
+            </div>
+            <p class="text-md text-center" style="color: var(--color-text-muted);" class="mt-8">比亞迪對挑戰的回應是多面向且積極主動的，旨在通過多元化收入來源和提升產品競爭力來維持領導地位。這種全面的戰略應對措施，預期將使比亞迪在當前行業洗牌中變得更強大。</p>
+        </section>
+
+        <section id="vertical-integration" class="section-card">
+            <h2 class="section-title">🔗 垂直整合：核心競爭力</h2>
+            <p class="text-lg text-center" style="color: var(--color-text-muted);" class="mb-6">比亞迪的垂直整合模式是其成功的關鍵。從核心零部件（如電池、電機、電控）的自主研發與生產，到整車製造，再到部分下游服務，這種模式賦予了比亞迪顯著的成本控制、供應鏈韌性和快速創新能力。</p>
+            <div class="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-2 overflow-x-auto p-4">
+                <div class="flow-diagram-item">原材料採購</div>
+                <div class="flow-diagram-arrow">➔</div>
+                <div class="flow-diagram-item">電池研發生產</div>
+                <div class="flow-diagram-arrow">➔</div>
+                <div class="flow-diagram-item">電機/電控研發生產</div>
+                <div class="flow-diagram-arrow">➔</div>
+                <div class="flow-diagram-item">半導體芯片 (部分自研)</div>
+                <div class="flow-diagram-arrow">➔</div>
+                <div class="flow-diagram-item">新能源汽車整車製造</div>
+                <div class="flow-diagram-arrow">➔</div>
+                <div class="flow-diagram-item">全球銷售與服務</div>
+            </div>
+             <p class="text-md text-center" style="color: var(--color-text-muted);" class="mt-6">這種深度整合使其能夠快速響應市場變化，並在激烈的競爭中保持優勢，同時降低了對外部供應中斷的脆弱性，是其競爭護城河的核心支柱。</p>
+        </section>
+
+    </div>
+
+    <footer class="text-center mt-12 py-8 border-t" style="border-color: var(--color-accent-tertiary);">
+        <p class="text-sm" style="color: var(--color-text-muted);">&copy; 2025 比亞迪全面深度分析互動應用。基於公開報告數據。</p>
+    </footer>
+
+    <script>
+        // Use CSS variables for colors in JS for consistency
+        const CHART_TEXT_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--color-text-dark');
+        const CHART_GRID_COLOR = 'rgba(162, 178, 159, 0.2)'; // Light Sage with alpha
+        const CHART_PRIMARY_ACCENT = getComputedStyle(document.documentElement).getPropertyValue('--color-accent-primary');
+        const CHART_SECONDARY_ACCENT = getComputedStyle(document.documentElement).getPropertyValue('--color-accent-secondary');
+        const CHART_TERTIARY_ACCENT = getComputedStyle(document.documentElement).getPropertyValue('--color-accent-tertiary');
+        const CHART_ERROR_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--color-error');
+        const CHART_SUCCESS_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--color-success');
+
+        function processChartLabels(labels) {
+            return labels.map(label => {
+                if (typeof label === 'string' && label.length > 10) { // Adjusted for Chinese characters
+                    const lines = [];
+                    let currentLine = "";
+                    // Iterate through characters to build lines
+                    for (let i = 0; i < label.length; i++) {
+                        currentLine += label[i];
+                        // Heuristic break for Chinese characters, try to break around 8-10 characters
+                        if (currentLine.length >= 8 && i < label.length - 1) {
+                            lines.push(currentLine);
+                            currentLine = "";
+                        }
+                    }
+                    // Push any remaining part of the line
+                    if (currentLine.length > 0) {
+                        lines.push(currentLine);
+                    }
+                    return lines.length > 0 ? lines : [label]; // Ensure an array is always returned
+                }
+                return label;
+            });
+        }
+        
+        const tooltipTitleCallback = function(tooltipItems) {
+            const item = tooltipItems[0];
+            let label = item.chart.data.labels[item.dataIndex];
+            if (Array.isArray(label)) {
+              return label.join(''); 
+            }
+            return label;
+        };
+
+        const defaultChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: CHART_TEXT_COLOR, font: { size: 12 } }
+                },
+                tooltip: {
+                    callbacks: { title: tooltipTitleCallback },
+                    titleFont: { size: 14 },
+                    bodyFont: { size: 12 },
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    titleColor: '#FFFFFF',
+                    bodyColor: '#FFFFFF',
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: CHART_TEXT_COLOR, font: { size: 11 } },
+                    grid: { color: CHART_GRID_COLOR },
+                    title: { display: true, color: CHART_TEXT_COLOR, font: { size: 13, weight: 'bold' } }
+                },
+                y: {
+                    ticks: { color: CHART_TEXT_COLOR, font: { size: 11 } },
+                    grid: { color: CHART_GRID_COLOR },
+                    title: { display: true, color: CHART_TEXT_COLOR, font: { size: 13, weight: 'bold' } }
+                }
+            }
+        };
+
+        // NEV Sales Trend Chart
+        const nevSalesCtx = document.getElementById('nevSalesTrendChart').getContext('2d');
+        new Chart(nevSalesCtx, {
+            type: 'line',
+            data: {
+                labels: processChartLabels(['2019年', '2020年', '2021年', '2022年', '2023年', '2024年']),
+                datasets: [{
+                    label: '新能源汽車銷量 (萬輛)',
+                    data: [40.94, 39.46, 72.13, 180.25, 302.44, 427.21],
+                    borderColor: CHART_PRIMARY_ACCENT,
+                    backgroundColor: 'rgba(92, 141, 137, 0.1)', /* Primary accent with alpha */
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: { ...defaultChartOptions, scales: {...defaultChartOptions.scales, x: {...defaultChartOptions.scales.x, title: {...defaultChartOptions.scales.x.title, text: '年份'}}, y: {...defaultChartOptions.scales.y, title: {...defaultChartOptions.scales.y.title, text: '銷量 (萬輛)'}}} }
+        });
+
+        // Sales Composition Chart
+        const salesCompCtx = document.getElementById('salesCompositionChart').getContext('2d');
+        new Chart(salesCompCtx, {
+            type: 'doughnut',
+            data: {
+                labels: processChartLabels(['純電動汽車 (BEV)', '插電式混合動力汽車 (PHEV)']),
+                datasets: [{
+                    data: [170, 250], // 萬輛
+                    backgroundColor: [CHART_PRIMARY_ACCENT, CHART_SECONDARY_ACCENT],
+                    borderColor: ['#FFFFFF', '#FFFFFF'],
+                    borderWidth: 2,
+                    hoverOffset: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: CHART_TEXT_COLOR, font: {size: 12}} }, tooltip: { callbacks: { title: tooltipTitleCallback, label: function(context) { let label = context.label || ''; if (label) { label += ': '; } if (context.parsed !== null) { label += context.parsed + ' 萬輛'; } return label; } }, titleFont: {size: 14}, bodyFont: {size:12} }} }
+        });
+        
+        // Battery Market Share Chart
+        const batteryCtx = document.getElementById('batteryMarketShareChart').getContext('2d');
+        new Chart(batteryCtx, {
+            type: 'bar',
+            data: {
+                labels: processChartLabels(['寧德時代 (CATL)', '比亞迪 (BYD)', 'LG能源解決方案']),
+                datasets: [{
+                    label: '全球電動汽車電池市場份額 (%)',
+                    data: [37.9, 17.2, 10.8],
+                    backgroundColor: [CHART_SECONDARY_ACCENT, CHART_PRIMARY_ACCENT, CHART_TERTIARY_ACCENT],
+                    borderRadius: 4
+                }]
+            },
+            options: { ...defaultChartOptions, indexAxis: 'y', scales: {...defaultChartOptions.scales, x: {...defaultChartOptions.scales.x, title: {...defaultChartOptions.scales.x.title, text: '市場份額 (%)'}}, y: {...defaultChartOptions.scales.y, title: {...defaultChartOptions.scales.y.title, text: '電池製造商'}, grid: {display: false}} }, plugins: {...defaultChartOptions.plugins, legend: {display: false}} }
+        });
+
+        // Financial Growth Chart
+        const financialCtx = document.getElementById('financialGrowthChart').getContext('2d');
+        new Chart(financialCtx, {
+            type: 'bar',
+            data: {
+                labels: processChartLabels(['2023年', '2024年']),
+                datasets: [
+                    {
+                        label: '營業總收入 (億元)',
+                        data: [6023.15, 7771],
+                        backgroundColor: CHART_PRIMARY_ACCENT,
+                        borderRadius: 4
+                    },
+                    {
+                        label: '淨利潤 (億元)',
+                        data: [300.4, 402.54],
+                        backgroundColor: CHART_SECONDARY_ACCENT,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: { ...defaultChartOptions, scales: {...defaultChartOptions.scales, x: {...defaultChartOptions.scales.x, title: {...defaultChartOptions.scales.x.title, text: '財政年度'}}, y: {...defaultChartOptions.scales.y, title: {...defaultChartOptions.scales.y.title, text: '金額 (億元人民幣)'}} }, plugins: {...defaultChartOptions.plugins, legend: {position: 'top'}} }
+        });
+
+        // Tabs functionality
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                const targetTab = button.getAttribute('data-tab');
+                tabContents.forEach(content => {
+                    if (content.id === `${targetTab}-content`) {
+                        content.classList.add('active');
+                    } else {
+                        content.classList.remove('active');
+                    }
+                });
+            });
+        });
+        
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        // Smooth scroll for nav links and active state
+        const navLinks = document.querySelectorAll('.nav-link');
+        const sections = document.querySelectorAll('section[id]');
+
+        function updateActiveNavLink() {
+            let currentActiveSection = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100; // Adjust for fixed nav height
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= sectionTop && pageYOffset < sectionTop + sectionHeight) {
+                    currentActiveSection = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').substring(1) === currentActiveSection) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', updateActiveNavLink);
+        window.addEventListener('load', updateActiveNavLink); // Set active on load
+
+        document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                mobileMenu.classList.add('hidden'); // Close mobile menu on link click
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                     const offsetTop = targetElement.offsetTop - 80; // Adjust for sticky nav height
+                     window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // LLM-powered Financial Insight Generation
+        document.getElementById('generateInsightBtn').addEventListener('click', async () => {
+            const outputDiv = document.getElementById('financialInsightOutput');
+            outputDiv.innerHTML = '生成中...';
+            outputDiv.classList.add('animate-pulse');
+
+            const revenue = 7771; // 億元
+            const netProfit = 402.54; // 億元
+            const rAndDExpenditure = 542; // 億元
+            const revenueGrowth = 29; // %
+            const netProfitGrowth = 34; // %
+            const rAndDGrowth = 36; // %
+
+            const prompt = `根據比亞迪2024年的財務數據，包括總收入 ${revenue} 億元（同比增長 ${revenueGrowth}%）、淨利潤 ${netProfit} 億元（同比增長 ${netProfitGrowth}%）以及研發支出 ${rAndDExpenditure} 億元（同比增長 ${rAndDGrowth}%），請提供一段簡潔的市場洞察或趨勢分析。重點關注這些數據所反映出的比亞迪在新能源市場的財務健康狀況和發展潛力。`;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // Canvas will provide this at runtime
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    outputDiv.innerHTML = text;
+                } else {
+                    outputDiv.innerHTML = '未能生成洞察。請稍後再試。';
+                }
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                outputDiv.innerHTML = '生成洞察時發生錯誤。';
+            } finally {
+                outputDiv.classList.remove('animate-pulse');
+            }
+        });
+
+    </script>
+</body>
+</html>
